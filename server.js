@@ -147,24 +147,28 @@ const ftp = require("basic-ftp")
 // -----------------------------------------------------
 // MACHINE ID FILE (SUPPORTS MULTIPLE IDs)
 // -----------------------------------------------------
-const MACHINE_ID_FILE = "D:\\Freelance\\csv-viewer\\machine-ids.txt";
+// const MACHINE_ID_FILE = "D:\\Freelance\\csv-viewer\\machine-ids.txt";
 
-function getLocalMachineIdsFromFile() {
-  try {
-    if (fs.existsSync(MACHINE_ID_FILE)) {
-      const content = fs.readFileSync(MACHINE_ID_FILE, "utf8");
+async function getLocalMachineIdsFromFile() {
+    try {
+        const tempFile = await downloadMachineIdsFromFTP();
 
-      // Return array of cleaned machine IDs
-      return content
-        .split(/\r?\n/)
-        .map(line => line.trim())
-        .filter(line => line.length > 0);
+        if (!tempFile || !fs.existsSync(tempFile)) {
+            console.log("MachineIds.txt not found on FTP");
+            return null;
+        }
+
+        const content = fs.readFileSync(tempFile, "utf8");
+
+        return content
+            .split(/\r?\n/)
+            .map(line => line.trim())
+            .filter(line => line.length > 0);
+
+    } catch (err) {
+        console.error("❌ Error reading MachineIds.txt:", err);
+        return null;
     }
-    return null;
-  } catch (err) {
-    console.error("❌ Error reading machine_id.txt:", err);
-    return null;
-  }
 }
 
 // -----------------------------------------------------
@@ -243,66 +247,131 @@ function getLogFilePath() {
   return path.join(logsDir, `login_log_${year}-${month}.csv`);
 }
 
-function appendToCSV(username, location, clientMachineId) {
-  const filePath = getLogFilePath();
-  const timestamp = new Date().toLocaleString();
-  const serverMachineId = getServerMachineUUID();
+async function appendToCSV(username, location, clientMachineId) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
 
-  const line = `"${timestamp}","${username}","${location}","${clientMachineId}","${serverMachineId}"\n`;
+    const fileName = `login_log_${year}-${month}.csv`;
 
-  if (!fs.existsSync(filePath)) {
+    // Temporary file path (local)
+    const tempPath = path.join(__dirname, fileName);
+
+    const timestamp = now.toLocaleString();
+    const serverMachineId = getServerMachineUUID();
+
+    const line = `"${timestamp}","${username}","${location}","${clientMachineId}","${serverMachineId}"\n`;
+
+    let writeHeader = false;
+
+    // If the temp file does NOT exist, add header first
+    if (!fs.existsSync(tempPath)) {
+        writeHeader = true;
+    }
+
+    // Write the file locally first
     const headers = `"Timestamp","Username","Location","Client Machine ID","Server Machine ID"\n`;
-    fs.writeFileSync(filePath, headers);
-  }
 
-  fs.appendFileSync(filePath, line);
+    fs.writeFileSync(tempPath, writeHeader ? headers + line : line);
+
+    // Upload file to FTP
+    await uploadLogToFTP(tempPath, fileName);
+
+    // Delete temporary local file
+    fs.unlinkSync(tempPath);
 }
+  // -----------------------------------------------------
+  // CONNECT TO FTP
+  // -----------------------------------------------------
+
+  async function uploadLogToFTP(localFilePath, remoteFileName) {
+    const client = new ftp.Client();
+    try {
+        await client.access({
+            host: "10.182.197.75",   // your FTP server IP
+            port: 21,
+            user: "ASUS",
+            password: "ynotdc@123",
+            secure: false
+        });
+
+        await client.ensureDir("/Logs"); // folder on FTP
+        await client.uploadFrom(localFilePath, `/Logs/${remoteFileName}`);
+
+    } catch (err) {
+        console.error("FTP Upload Error:", err);
+    }
+    client.close();
+}
+
+async function downloadMachineIdsFromFTP() {
+    const client = new ftp.Client();
+    try {
+        await client.access({
+            host: "10.182.197.75",
+            port: 21,
+            user: "ASUS",
+            password: "ynotdc@123",
+            secure: false
+        });
+
+        const tempPath = path.join(__dirname, "machine-ids-temp.txt");
+
+        // Download from FTP to temp file
+        await client.downloadTo(tempPath, "/MachineIds.txt");
+
+        client.close();
+        return tempPath;
+
+    } catch (err) {
+        console.error("FTP Download Error:", err);
+        return null;
+    }
+}
+
 
 // -----------------------------------------------------
 // LOGIN API
 // -----------------------------------------------------
-app.post("/login", (req, res) => {
-  const { username, password, location, machineId } = req.body;
+app.post("/login", async (req, res) => {
+    const { username, password, location, machineId } = req.body;
 
-  const user = USERS[username];
+    const user = USERS[username];
 
-  if (!user) {
-    return res.json({ success: false, message: "Invalid username or password." });
-  }
+    if (!user) {
+        return res.json({ success: false, message: "Invalid username or password." });
+    }
 
-  if (password !== user.password) {
-    return res.json({ success: false, message: "Invalid username or password." });
-  }
+    if (password !== user.password) {
+        return res.json({ success: false, message: "Invalid username or password." });
+    }
 
-  // -----------------------------------------------------
-  // MACHINE ID VALIDATION (MULTIPLE IDs)
-  // -----------------------------------------------------
-  const localMachineIds = getLocalMachineIdsFromFile();
+    // Load machine IDs
+    const localMachineIds = await getLocalMachineIdsFromFile();
 
-  if (!localMachineIds || localMachineIds.length === 0) {
-    return res.json({
-      success: false,
-      message: "File not found."
-    });
-  }
+    if (!localMachineIds || localMachineIds.length === 0) {
+        return res.json({
+            success: false,
+            message: "File not found."
+        });
+    }
 
-  console.log("Accepted Machine IDs:", localMachineIds);
+    console.log("Accepted Machine IDs:", localMachineIds);
 
-  if (!localMachineIds.includes(machineId)) {
-    return res.json({
-      success: false,
-      message: "Device not registered",
-      type: "error"
-    });
-  }
+    if (!localMachineIds.includes(machineId)) {
+        return res.json({
+            success: false,
+            message: "Device not registered",
+            type: "error"
+        });
+    }
 
-  // -----------------------------------------------------
-  // LOG SUCCESSFUL LOGIN
-  // -----------------------------------------------------
-  appendToCSV(username, location, machineId);
+    // Save log to FTP
+    await appendToCSV(username, location, machineId);
 
-  res.json({ success: true, message: "Login successful" });
+    res.json({ success: true, message: "Login successful" });
 });
+
 
 // -----------------------------------------------------
 // START SERVER
