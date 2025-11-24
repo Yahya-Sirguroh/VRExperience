@@ -195,7 +195,7 @@ form.addEventListener("submit", async (e) => {
       msg.textContent = "Login successful! Redirecting...";
       msg.className = "msg success";
       setTimeout(() => 
-        (window.location.href = "http://127.0.0.1:5500/Silver-Annapurna-Temp-252005/index.htm"), 
+        (window.location.href = "https://yahya-sirguroh.github.io/SilverAnnapurnaTemp/"), 
       1500);
     } else {
       msg.textContent = data.message;
