@@ -288,10 +288,10 @@ async function appendToCSV(username, location, clientMachineId) {
     const client = new ftp.Client();
     try {
         await client.access({
-            host: "10.182.197.75",   // your FTP server IP
+            host: "192.185.129.252",   // your FTP server IP
             port: 21,
-            user: "ASUS",
-            password: "ynotdc@123",
+            user: "vr@silverhouse.business",
+            password: "avETbx54=w5(",
             secure: false
         });
 
@@ -308,10 +308,10 @@ async function downloadMachineIdsFromFTP() {
     const client = new ftp.Client();
     try {
         await client.access({
-            host: "10.182.197.75",
+            host: "192.185.129.252",
             port: 21,
-            user: "ASUS",
-            password: "ynotdc@123",
+            user: "vr@silverhouse.business",
+            password: "avETbx54=w5(",
             secure: false
         });
 
