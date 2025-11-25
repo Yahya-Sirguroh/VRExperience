@@ -261,46 +261,51 @@ footer {
 .success { color: #00ff88; }
 .error { color: #ff7070; }
 
-/* ===========================
-   RESPONSIVE DESIGN (MOBILE)
-   =========================== */
-
+/* ============================
+   MOBILE VIEW (Perfect Match)
+   ============================ */
 @media (max-width: 600px) {
 
   body {
-    background: url('desk1.jpg') no-repeat center center/cover;
-    overflow: auto;
-    padding: 20px;
+    background-size: cover;
+    background-position: center;
+    padding: 0 18px;
+    overflow-y: auto;
   }
 
   .login-container {
     width: 100%;
-    max-width: 320px;
-    padding: 30px 20px;
-    border-radius: 12px;
-    margin-top: 30px;
+    max-width: 360px;
+    padding: 45px 32px;          /* Bigger like screenshot */
+    margin: 40px auto;           /* Center vertically */
+    border-radius: 16px;
+    background: rgba(20, 25, 35, 0.72);
+    backdrop-filter: blur(28px);
   }
 
   .logo-image img {
-    width: 70px;
+    width: 85px;
   }
 
   .logo {
-    font-size: 15px;
+    font-size: 19px;
+    font-weight: 600;
   }
 
   .tagline {
-    font-size: 12px;
-    margin-bottom: 25px;
+    font-size: 13px;
+    margin-bottom: 32px;
   }
 
   label {
-    font-size: 11px;
+    font-size: 12px;
+    letter-spacing: 1px;
   }
 
   input {
-    padding: 14px;
+    padding: 14px 16px;
     font-size: 14px;
+    border-radius: 8px;
   }
 
   input::placeholder {
@@ -308,37 +313,36 @@ footer {
   }
 
   button {
-    padding: 12px;
-    font-size: 14px;
+    padding: 14px;
+    border-radius: 10px;
+    font-size: 15px;
+    margin-top: 18px;
   }
 
   footer {
-    font-size: 9px;
-    margin-top: 20px;
+    font-size: 10px;
+    margin-top: 30px;
   }
 }
 
-/* Extra-small screens (older phones 320–400px) */
+/* ============= VERY SMALL PHONES ============= */
 @media (max-width: 400px) {
 
   .login-container {
-    max-width: 300px;
-    padding: 28px 18px;
+    max-width: 330px;
+    padding: 38px 25px;
   }
 
   .logo-image img {
-    width: 60px;
+    width: 70px;
   }
 
-  .tagline {
-    font-size: 11px;
-  }
-
-  input {
-    padding: 12px;
+  .logo {
+    font-size: 17px;
   }
 
   button {
-    padding: 10px;
+    padding: 12px;
+    font-size: 14px;
   }
 }
